@@ -3,14 +3,14 @@ import numpy as np
 
 
 class face_activity():
-    mask = cv2.imread(".face_activity/dog.png")
-    cascade = cv2.CascadeClassifier(".face_activity/haarcascade_frontalface_default.xml")
+    mask = cv2.imread("./face_activity/dog.png")
+    cascade = cv2.CascadeClassifier("./face_activity/haarcascade_frontalface_default.xml")
     
     def __init__(self,force_camera = True, Camera_nunber = 3) -> None:
         self.__activiate_camera(Camera_nunber,force_camera)
 
 
-    def __overlay_mask(face: np.array, mask: np.array) -> np.array:
+    def __overlay_mask(self,face: np.array, mask: np.array) -> np.array:
         """Add the mask to the provided face, and return the face with mask.
 
         Args:
@@ -46,7 +46,7 @@ class face_activity():
 
     def __activiate_camera(self,num:int,user_force_camera:bool):
         if user_force_camera:
-            for i in num:
+            for i in range(num):
                 self.cap = cv2.VideoCapture(i)
                 if self.cap is not None and self.cap.isOpened():
                     break
@@ -56,13 +56,13 @@ class face_activity():
         if not user_force_camera:
             self.cap = cv2.VideoCapture(num)
 
-    def video_turn_grey(self)-> np.array:
+    def convert_to_grey(self,frame = None)-> np.array:
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        blackwhite = cv2.equalizeHist(gray)
-        return blackwhite
+        self.blackwhite = cv2.equalizeHist(gray)
+        return self.blackwhite
 
 
-    def get_video_camera(self) ->np.array:
+    def get_video_frame(self) ->np.array:
         __ , self.frame = self.cap.read()
         self.frame_h, self.frame_w, _ = self.frame.shape
         return self.frame
@@ -77,9 +77,16 @@ class face_activity():
         else:
             return False
 
+    def detect_human(self,noir_imagr:np.array):
+        cv2.imshow("noir_imagr",noir_imagr)
 
-    def show_image(self):
-        cv2.imshow('frame', self.frame)
+        rects = self.cascade.detectMultiScale(noir_imagr, scaleFactor=1.3, minNeighbors=4, minSize=(30, 30),
+        flags=cv2.CASCADE_SCALE_IMAGE)
+
+        return rects
+
+    def show_image(self,frame):
+        cv2.imshow('frame', frame)
 
 
     def apply_mask(self):
@@ -91,6 +98,3 @@ class face_activity():
         cv2.destroyAllWindows()
 
 
-
-if __name__ == '__main__':
-    camera = face_activity()
