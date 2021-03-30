@@ -1,6 +1,4 @@
 import cv2.cv2 as cv2
-
-import cv2.cv2 as cv2
 import numpy as np
 
 cap = cv2.VideoCapture("./footage/drift_shakey_pratice.mp4")
@@ -33,7 +31,7 @@ class drift_remove():
         self.previous_frame = x
         self.frame_count += 1
 
-    def stabilize_drone(self, grey_img):
+    def stabilize_camera(self, grey_img):
         """frame needed for processing. returns every 20 iteration"""
         if self.frame_count == 20:
             self.frame_count = 0
