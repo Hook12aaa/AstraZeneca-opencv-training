@@ -51,7 +51,7 @@ class face_activity():
             num (int): Camera's Device numb eg 1 or 2....
             user_force_camera (bool): True at default will open camera on auto
         """
-        if user_force_camera:
+        if not user_force_camera:
             for i in range(num):
                 self.cap = cv2.VideoCapture(i)
                 if self.cap is not None and self.cap.isOpened():
@@ -59,7 +59,7 @@ class face_activity():
                 else:
                     continue
     
-        if not user_force_camera:
+        if user_force_camera:
             self.cap = cv2.VideoCapture(num)
 
     def convert_to_grey(self,frame = None)-> np.array:

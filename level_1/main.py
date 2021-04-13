@@ -2,7 +2,7 @@ from face_activity import face_activity
 import cv2
 
 
-camera = face_activity(False,1)
+camera = face_activity(True,2)
 
 while True:
     frame = camera.get_video_frame()
