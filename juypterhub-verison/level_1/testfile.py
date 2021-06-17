@@ -1,13 +1,47 @@
+#
 import cv2.cv2 as cv2
 import numpy as np
+import sys
+from ipywebrtc import CameraStream,ImageRecorder
+from ipywidgets import Output
+from PIL import Image
+import io
+import numpy as np
+from matplotlib import pyplot as plt
+
+
+
+
+class look_up():
+    out = Output()
+
+    
+    @out.capture()
+    def on_value_changed(_):
+        global camera_state
+        im = Image.open(io.BytesIO(image_recorder.image.value)) 
+        camera_state = np.array(im)
+
+    def run_program(self):
+        global image_recorder
+        camera = CameraStream.facing_user(audio=False)
+        image_recorder = ImageRecorder(stream=camera)
+        image_recorder.image.observe(look_up.on_value_changed, 'value')
+        image_recorder.recording = True
+        return camera_state
+
+
+
 
 
 class face_activity():
+    
     mask = cv2.imread("./face_activity/dog.png")
     cascade = cv2.CascadeClassifier("./face_activity/haarcascade_frontalface_default.xml")
-    
-    def __init__(self,force_camera = True, Camera_nunber = 3) -> None:
-        self.__activiate_camera(Camera_nunber,force_camera)
+
+    def __init__(self) -> None:
+        
+        print("Camera Object is activated")
 
 
     def __overlay_mask(self,face: np.array, mask: np.array) -> np.array:
@@ -23,14 +57,14 @@ class face_activity():
         """
         mask_h, mask_w, _ = mask.shape
         face_h, face_w, _ = face.shape
-
+ 
         # Resize the mask to fit on face
         factor = min(face_h / mask_h, face_w / mask_w)
         new_mask_w = int(factor * mask_w)
         new_mask_h = int(factor * mask_h)
         new_mask_shape = (new_mask_w, new_mask_h)
         resized_mask = cv2.resize(mask, new_mask_shape)
-
+    
         # Add mask to face - ensure mask is centered
         face_with_mask = face.copy()
         non_white_pixels = (resized_mask < 250).all(axis=2)
@@ -41,26 +75,6 @@ class face_activity():
 
         return face_with_mask
 
-
-
-
-    def __activiate_camera(self,num:int,user_force_camera:bool):
-        """private function that forces camera to speed up loading time
-
-        Args:
-            num (int): Camera's Device numb eg 1 or 2....
-            user_force_camera (bool): True at default will open camera on auto
-        """
-        if not user_force_camera:
-            for i in range(num):
-                self.cap = cv2.VideoCapture(i)
-                if self.cap is not None and self.cap.isOpened():
-                    break
-                else:
-                    continue
-    
-        if user_force_camera:
-            self.cap = cv2.VideoCapture(num)
 
     def convert_to_grey(self,frame = None)-> np.array:
         """convert video image into grey
@@ -75,14 +89,16 @@ class face_activity():
         self.blackwhite = cv2.equalizeHist(gray)
         return self.blackwhite
 
-
     def get_video_frame(self) ->np.array:
         """parse frame for camera into a return. Gets a frame
 
         Returns:
             np.array: your image from the camera
         """
-        __ , self.frame = self.cap.read()
+        attempt = look_up()
+        frame =  attempt.run_program()
+        convert = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
+        self.frame = cv2.cvtColor(convert, cv2.COLOR_RGBA2RGB)
         self.frame_h, self.frame_w, _ = self.frame.shape
         return self.frame
 
@@ -94,10 +110,11 @@ class face_activity():
             y (int): Y cordinates of the image
             w (int): The size of the image vertically
             h (int): The size of the image horizontally
-        """
+        """           
         self.y0, self.y1 = int(y - 0.25*h), int(y + 0.75*h)
         self.x0, self.x1 = x, x + w
     
+
     def is_out_of_frame(self) -> bool:
         """Will return true if you are outside of the camera view
 
@@ -109,7 +126,7 @@ class face_activity():
         else:
             return False
 
-    def detect_human(self,noir_imagr:np.array):
+    def detect_people(self,noir_imagr:np.array):
         """Detect Human will return locations of people
 
         Args:
@@ -118,23 +135,34 @@ class face_activity():
         Returns:
             rect: all postions of each person in frame
         """
-        cv2.imshow("noir_imagr",noir_imagr)
-
+ 
         rects = self.cascade.detectMultiScale(noir_imagr, scaleFactor=1.3, minNeighbors=4, minSize=(30, 30),
         flags=cv2.CASCADE_SCALE_IMAGE)
-
         return rects
+    
 
     def show_image(self,frame= None):
         """will display image as a spearte window when called
 
         Args:
             frame (OpenCV_image): Can be empty if needed, just show passing the frame into another area
+        """     
+        plt.imshow(self.frame)
+        plt.show()
+
+    def change_to_brown_dog_face(self):
+        """Autosetted to brown dog face but will show brown dog again"""
+        self.mask = cv2.imread("./face_activity/dog.png")
+    
+    def change_to_dalmation_dog_face(self) -> None:
+        """replaces your overal with a dalmation instead"""
+        self.mask = cv2.imread("./face_activity/dog_2.png")
+
+    def change_to_black(self) -> None:
+        """replaces the overlay with a black image
         """
-        cv2.imshow('frame', frame)
-
-
-    def apply_mask(self,frame = None):
+        self.mask = cv2.imread("./face_activity/black.png")
+    def apply_mask(self,frame = None) -> None:
         """apply the mask to your image
 
         Args:
@@ -142,10 +170,9 @@ class face_activity():
         """
         self.frame[self.y0:self.y1, self.x0: self.x1] = self.__overlay_mask(self.frame[self.y0: self.y1, self.x0: self.x1], self.mask)
 
-
     def end_program(self):
         """decalare at the end of the program"""
+        print("end_program() was called: Closing Application")
         self.cap.release()
         cv2.destroyAllWindows()
-
 
